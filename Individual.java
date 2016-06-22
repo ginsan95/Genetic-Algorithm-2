@@ -11,6 +11,7 @@ public class Individual{
 	public final double MIN_CELL_VALUE;
 	public final double MAX_CELL_VALUE;
 	private final String FUNCTION_TYPE;
+	private static double mutationRate = 0.01;
 	private Random rand = new Random();
 	private double[] genes; //Actual look of the individual
 	private double minValue; //Represent the fitness of the individual
@@ -147,13 +148,14 @@ public class Individual{
 				new Individual(genes2, MIN_CELL_VALUE, MAX_CELL_VALUE, FUNCTION_TYPE)};
 	}
 	
-	//Mutate the allele of the genes
+	//Mutate the chromosome of the genes
 	public void mutate(double value)
 	{	
 		for(int i=0; i<genes.length; i++)
 		{
-			//Each cell/allele 1% change to mutate
-			if(rand.nextDouble()<0.01)
+			//Each cell/chromosome has 1% change to mutate
+			//if(rand.nextDouble()<0.01)
+			if(rand.nextDouble()<mutationRate)
 			{
 				double mutateRand = -value + (value + value) * rand.nextDouble();
 				//If exceed range do not mutate
@@ -177,7 +179,7 @@ public class Individual{
 		}
 	}
 	
-	//Clone genes by reversing the position of the allele
+	//Clone genes by reversing the position of the chromosome
 	private void crossClone(double[] array, double[] array2, int cStart, int cEnd, int start)
 	{
 		for(int i=cStart; i<cEnd; i++)
@@ -195,6 +197,16 @@ public class Individual{
 	public void setMinValue(double value)
 	{
 		minValue = value;
+	}
+	
+	public static double getMutationRate()
+	{
+		return mutationRate;
+	}
+	
+	public static void setMutationRate(double rate)
+	{
+		mutationRate = rate;
 	}
 	
 	//Print the genes for the individual
