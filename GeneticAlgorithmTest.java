@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,16 +50,21 @@ public class GeneticAlgorithmTest {
 				//Calculate the mutation value for the generation
 				population.calculateMutationValue(0.5);
 				
-				List<Future<Void>> voidFutureList = new ArrayList<Future<Void>>();
+				//List<Future<Void>> voidFutureList = new ArrayList<Future<Void>>();
+				CountDownLatch latch = new CountDownLatch((int)Math.ceil(population.getSize()/2.0));
 				
 				//Selection & Reproduction & Mutation
 				for(int j=0; j<population.getSize(); j+=2)
 				{
-					voidFutureList.add(exec.submit(new EvolutionThread(population, newPopulation, TOUR_SIZE, j)));
+					//voidFutureList.add(exec.submit(new EvolutionThread(population, newPopulation, 
+					//		TOUR_SIZE, j, latch)));
+					exec.execute(new EvolutionThread(population, newPopulation, 
+							TOUR_SIZE, j, latch));
 				}
 				
 				//Wait for all task to finish without shutting down the thread pool
-				for(Future<Void> voidFuture: voidFutureList)
+				
+				/*for(Future<Void> voidFuture: voidFutureList)
 				{
 					try {
 						voidFuture.get();
@@ -69,16 +75,22 @@ public class GeneticAlgorithmTest {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+				}*/
+				
+				try {
+					latch.await();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 				
 				population = newPopulation;
 				population.calculateFitness();
-				if(count%500==0)
+				//if(count%500==0)
 				{
 					//System.out.println(Population.getMutationConst());
 				System.out.println("Generation " + count);
-				//System.out.println(population.toString() + "\n");
-				System.out.println(population.toString() + functions[i]);
+				System.out.println(population.toString() + "\n");
 				}
 				
 				/**********************************************/
