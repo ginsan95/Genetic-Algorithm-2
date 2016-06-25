@@ -1,6 +1,6 @@
 import java.util.Random;
 
-public class Individual{
+public final class Individual{
 	
 	//public static final double MIN_CELL_VALUE = -5.12;
 	//public static final double MAX_CELL_VALUE = 5.12;
@@ -10,45 +10,47 @@ public class Individual{
 	//public static final double MAX_CELL_VALUE = 510;
 	public final double MIN_CELL_VALUE;
 	public final double MAX_CELL_VALUE;
-	private final String FUNCTION_TYPE;
-	private static double mutationRate = 0.01;
-	private Random rand = new Random();
-	private double[] genes; //Actual look of the individual
-	private double minValue; //Represent the fitness of the individual
+	public final String FUNCTION_TYPE;
+	//private static double mutationRate = 0.01;
+	private final Random rand = new Random();
+	private final double[] genes; //Actual look of the individual
+	private final double minValue; //Represent the fitness of the individual
 	
 	
-	private Individual(double min, double max, String type)
+	/*private Individual(double min, double max, String type)
 	{
 		MIN_CELL_VALUE = min;
 		MAX_CELL_VALUE = max;
 		FUNCTION_TYPE = type;
-	}
+	}*/
 	
-	//1st way to create individual by specific size - random genes
+	//1st way to create individual by specify size - random genes
 	public Individual(int length, double min, double max, String type)
 	{
-		this(min, max, type);
-		create(length);
-		minValue = calculateSum();
-	}
-	
-	//2nd way to create individual by specific its genes
-	public Individual(double[] g, double min, double max, String type)
-	{
-		this(min, max, type);
-		genes = g;
-		minValue = calculateSum();
-	}
-	
-	//Create random genes for the individual
-	private void create(int length)
-	{
-		genes = new double[length];
+		//this(min, max, type);
+		MIN_CELL_VALUE = min;
+		MAX_CELL_VALUE = max;
+		FUNCTION_TYPE = type;
 		
+		//Create random genes
+		genes = new double[length];
 		for(int i=0; i<genes.length; i++)
 		{
 			genes[i] = MIN_CELL_VALUE + (MAX_CELL_VALUE - MIN_CELL_VALUE) * rand.nextDouble();
 		}
+		
+		minValue = calculateSum();
+	}
+	
+	//2nd way to create individual by specify its genes
+	public Individual(double[] g, double min, double max, String type)
+	{
+		//this(min, max, type);
+		MIN_CELL_VALUE = min;
+		MAX_CELL_VALUE = max;
+		FUNCTION_TYPE = type;
+		genes = g;
+		minValue = calculateSum();
 	}
 	
 	//Calculate the fitness based on the function
@@ -149,24 +151,34 @@ public class Individual{
 	}
 	
 	//Mutate the chromosome of the genes
-	public void mutate(double value)
+	public Individual mutate(double value, double rate)
 	{	
+		double[] newGenes = new double[genes.length];
+		
 		for(int i=0; i<genes.length; i++)
 		{
 			//Each cell/chromosome has 1% change to mutate
-			//if(rand.nextDouble()<0.01)
-			if(rand.nextDouble()<mutationRate)
+			if(rand.nextDouble()<rate)
 			{
 				double mutateRand = -value + (value + value) * rand.nextDouble();
 				//If exceed range do not mutate
 				if(genes[i] + mutateRand >= MIN_CELL_VALUE && genes[i] + mutateRand <= MAX_CELL_VALUE)
 				{
-					genes[i] += mutateRand;
+					newGenes[i] = genes[i] += mutateRand;
 				}
+				else //copy original gene
+				{
+					newGenes[i] = genes[i];
+				}
+			}
+			else //if no mutate then copy original gene
+			{
+				newGenes[i] = genes[i];
 			}
 		}
 		//Calculate the fitness for the new mutated genes
-		minValue = calculateSum();
+		//minValue = calculateSum();
+		return new Individual(newGenes, MIN_CELL_VALUE, MAX_CELL_VALUE, FUNCTION_TYPE);
 	}
 	
 	
@@ -192,21 +204,6 @@ public class Individual{
 	public double getMinValue()
 	{
 		return minValue;
-	}
-	
-	public void setMinValue(double value)
-	{
-		minValue = value;
-	}
-	
-	public static double getMutationRate()
-	{
-		return mutationRate;
-	}
-	
-	public static void setMutationRate(double rate)
-	{
-		mutationRate = rate;
 	}
 	
 	//Print the genes for the individual
