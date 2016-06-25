@@ -20,7 +20,7 @@ public class GeneticAlgorithmTest {
 		
 		ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()+1);
 		
-		for(int i=0; i<functions.length-2; i++)
+		for(int i=1; i<functions.length-1; i++)
 		{
 			//Variables for stuck handling algorithm
 			int startStuckCount=0;
@@ -30,11 +30,14 @@ public class GeneticAlgorithmTest {
 			double previousMin;
 			//
 			
+			double mutationValue = 0.05;
+			double mutationRate = 0.01;
+			
 			System.out.println(functions[i] + "\n");
 			
 			long startTime = System.currentTimeMillis();
-			Population population = new Population(POP_SIZE, functionsRange[i][0], functionsRange[i][1], functions[i]);
-			population.initialize(100);
+			Population population = new Population(POP_SIZE, 100, functionsRange[i][0], functionsRange[i][1], functions[i]);
+			//population.initialize(100);
 			System.out.println("Generation 1");
 			System.out.println(population.toString() + "\n");
 			previousMin = population.getMinValue();
@@ -44,11 +47,15 @@ public class GeneticAlgorithmTest {
 			{
 				//population = population.evolve(3, 0.5);
 				
-				Population newPopulation = new Population(population.getSize(), 
-						population.MIN_CELL_VALUE, population.MAX_CELL_VALUE, functions[i]);
+				//Population newPopulation = new Population(population.getSize(), 
+				//		population.MIN_CELL_VALUE, population.MAX_CELL_VALUE, functions[i]);
+				
+				//Create a temporary individual array to store the all new children
+				Individual[] newIndividuals = new Individual[population.getSize()];
 				
 				//Calculate the mutation value for the generation
-				population.calculateMutationValue(0.5);
+				mutationValue = stuck? population.calculateMutationValue(0.5, 0.02): 
+					population.calculateMutationValue(0.5);
 				
 				//List<Future<Void>> voidFutureList = new ArrayList<Future<Void>>();
 				CountDownLatch latch = new CountDownLatch((int)Math.ceil(population.getSize()/2.0));
@@ -58,25 +65,11 @@ public class GeneticAlgorithmTest {
 				{
 					//voidFutureList.add(exec.submit(new EvolutionThread(population, newPopulation, 
 					//		TOUR_SIZE, j, latch)));
-					exec.execute(new EvolutionThread(population, newPopulation, 
-							TOUR_SIZE, j, latch));
+					exec.execute(new EvolutionThread(population, newIndividuals, 
+							TOUR_SIZE, mutationValue, mutationRate, j, latch));
 				}
 				
-				//Wait for all task to finish without shutting down the thread pool
-				
-				/*for(Future<Void> voidFuture: voidFutureList)
-				{
-					try {
-						voidFuture.get();
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (ExecutionException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}*/
-				
+				//Wait for all task to finish without shutting down the thread pool	
 				try {
 					latch.await();
 				} catch (InterruptedException e) {
@@ -84,8 +77,13 @@ public class GeneticAlgorithmTest {
 					e.printStackTrace();
 				}
 				
+				//Create a new population based on the individual array which contains all the children
+				Population newPopulation = new Population(newIndividuals, population.MIN_CELL_VALUE, 
+						population.MAX_CELL_VALUE, population.FUNCTION_TYPE);
+				
+				//Override the old population with the enw population
 				population = newPopulation;
-				population.calculateFitness();
+				//population.calculateFitness();
 				//if(count%500==0)
 				{
 					//System.out.println(Population.getMutationConst());
@@ -106,8 +104,7 @@ public class GeneticAlgorithmTest {
 						if(startStuckCount>10)
 						{
 							stuck = true;
-							Individual.setMutationRate(0.02);
-							Population.setMutationConst(0.02);
+							mutationRate = 0.02;
 							startStuckCount=0;
 						}
 					}
@@ -142,8 +139,7 @@ public class GeneticAlgorithmTest {
 						if(endStuckCount>5)
 						{
 							stuck=false;
-							Individual.setMutationRate(0.01);
-							Population.setMutationConst(1);
+							mutationRate = 0.01;
 							endStuckCount=0;
 						}
 					}
