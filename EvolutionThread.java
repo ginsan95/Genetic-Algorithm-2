@@ -6,16 +6,20 @@ import java.util.concurrent.Future;
 
 public class EvolutionThread implements Runnable{
 
-	private Population population, newPopulation;
-	private int tourSize;
-	private int index;
+	private Population population;
+	private Individual[] newIndividuals;
+	private int tourSize, index;
+	private double mutationValue, mutationRate;
 	private CountDownLatch latch;
 	
-	public EvolutionThread(Population pop, Population newPop, int size, int i, CountDownLatch l)
+	public EvolutionThread(Population pop, Individual[] newIndivs, int size, double mValue, 
+			double mRate, int i, CountDownLatch l)
 	{
 		population = pop;
-		newPopulation = newPop;
+		newIndividuals = newIndivs;
 		tourSize = size;
+		mutationValue = mValue;
+		mutationRate = mRate;
 		index = i;
 		latch = l;
 	}
@@ -31,14 +35,16 @@ public class EvolutionThread implements Runnable{
 		//Reproduce new children
 		Individual[] children = parent1.reproduce(parent2);
 		
+		
 		for(Individual child: children)
 		{
-			if(index<newPopulation.getSize()) //Check for odd population size
+			if(index<newIndividuals.length) //Check for odd population size
 			{
 				//Mutate children
-				child.mutate(population.getMutationValue());
-				//Add children into new population
-				newPopulation.setIndividual(index++, child);
+				Individual mutatedChild = child.mutate(mutationValue, mutationRate);
+				//Add children into the temporary array to store the individuals
+				//newPopulation.setIndividual(index++, mutatedChild);
+				newIndividuals[index++] = mutatedChild;
 			}
 		}
 		latch.countDown();
