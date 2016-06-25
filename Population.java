@@ -8,28 +8,55 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Population {
+public final class Population {
 	
 	public final double MIN_CELL_VALUE;
 	public final double MAX_CELL_VALUE;
-	private final String FUNCTION_TYPE;
-	private static double mutationConst = 1; //Constant for stuck handling
-	private Individual[] individuals; //Individuals inside the population
-	private double maxValue, minValue, averageValue;
+	public final String FUNCTION_TYPE;
+	//private static double mutationConst = 1; //Constant for stuck handling
+	private final Individual[] individuals; //Individuals inside the population
+	private final double minValue, maxValue, averageValue;
 	//private AtomicInteger indexCount; //the index for next individual in the population
-	private double mutationValue;
+	//private double mutationValue;
 	
-	public Population(int size, double min, double max, String type)
+	//1st way to create population by specify size and individual size - random
+	public Population(int size, int length, double min, double max, String type)
 	{
 		individuals = new Individual[size];
 		MIN_CELL_VALUE = min;
 		MAX_CELL_VALUE = max;
 		FUNCTION_TYPE = type;
+		
+		initialize(100); //Initialize the population
+		
+		//After initialization, directly calculate the fitness the population
+		//and these data will not be changed for the population anymore
+		double[] data = calculateFitness();
+		minValue = data[0];
+		maxValue = data[1];
+		averageValue = data[2];
+		//indexCount = new AtomicInteger(0);
+	}
+	
+	//2nd way to create population by specify its individuals list
+	public Population(Individual[] indvs, double min, double max, String type)
+	{
+		individuals = indvs;
+		MIN_CELL_VALUE = min;
+		MAX_CELL_VALUE = max;
+		FUNCTION_TYPE = type;
+		
+		//Directly calculate the fitness the population
+		//and these data will not be changed for the population anymore
+		double[] data = calculateFitness();
+		minValue = data[0];
+		maxValue = data[1];
+		averageValue = data[2];
 		//indexCount = new AtomicInteger(0);
 	}
 	
 	//Initialize the population with many random new individuals
-	public void initialize(int length)
+	private void initialize(int length)
 	{
 		//Apply threading to create each individual to speed up the process
 		ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()+1);
@@ -52,20 +79,11 @@ public class Population {
 			}
 		}
 		exec.shutdown();
-		calculateFitness(); //Calculate fitness of new population
-	}
-	
-	public void initialize(int length, int a)
-	{
-		for(int i=0; i<individuals.length; i++)
-		{
-			individuals[i] = new Individual(length, MIN_CELL_VALUE, MAX_CELL_VALUE, FUNCTION_TYPE);
-		}
-		calculateFitness(); //Calculate fitness of new population
+		//calculateFitness(); //Calculate fitness of new population
 	}
 	
 	//Calculate the dynamic mutation value of the population
-	public void calculateMutationValue(double value)
+	public double calculateMutationValue(double value)
 	{
 		//calculateFitness();
 		double k = 0;
@@ -87,11 +105,17 @@ public class Population {
 		}
 		
 		//Use the minValue*k of the population as the rate for mutation if it is bigger than the caller rate
-		mutationValue = minValue*k > value? value: minValue*k;
-		mutationValue *= mutationConst;
+		return minValue*k > value? value: minValue*k;
+		//mutationValue *= mutationConst;
 		//trueValue = value;
 		
 		//System.out.println(mutationValue);
+	}
+	
+	//Overloaded method for stuck handling
+	public double calculateMutationValue(double value, double mutationConst)
+	{
+		return calculateMutationValue(value) * mutationConst;
 	}
 	
 	//Tournament selection to select best individual among the players
@@ -115,7 +139,7 @@ public class Population {
 	}
 	
 	//Calculate the fitness of the population
-	public void calculateFitness()
+	private double[] calculateFitness()
 	{
 		double currentMin = Double.POSITIVE_INFINITY;
 		double currentMax = Double.NEGATIVE_INFINITY;
@@ -134,9 +158,14 @@ public class Population {
 			total += myIndividual.getMinValue();
 		}
 		
-		minValue = currentMin;
-		maxValue = currentMax;
-		averageValue = total/individuals.length;
+		double average = total/individuals.length;
+		
+		//return all the calculated data to its caller
+		return new double[]{currentMin, currentMax,average};
+		
+		//minValue = currentMin;
+		//maxValue = currentMax;
+		//averageValue = total/individuals.length;
 	}
 	
 	/*public void addIndividual(Individual i)
@@ -144,10 +173,11 @@ public class Population {
 		individuals[indexCount.getAndIncrement()] = i;
 	}*/
 	
+	/*
 	public void setIndividual(int index, Individual i)
 	{
 		individuals[index] = i;
-	}
+	}*/
 	
 	public Individual getIndividual(int index)
 	{
@@ -159,6 +189,7 @@ public class Population {
 		return individuals.length;
 	}
 	
+	/*
 	public double getMutationValue()
 	{
 		return mutationValue;
@@ -167,17 +198,7 @@ public class Population {
 	public void setMutationValue(double value)
 	{
 		mutationValue = value;
-	}
-	
-	public static double getMutationConst()
-	{
-		return mutationConst;
-	}
-	
-	public static void setMutationConst(double value)
-	{
-		mutationConst = value;
-	}
+	}*/
 	
 	public double getMinValue()
 	{
